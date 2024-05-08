@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XE Historical Data Downloader</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+      crossorigin="anonymous"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script
+      src="https://code.jquery.com/jquery-3.7.1.min.js"
+      integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      body {
+        background-color: #f8f9fa;
+        font-family: Arial, sans-serif;
+      }
+      .container-fluid {
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .container {
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      }
+      p {
+        color: #6c757d;
+      }
+      label {
+        font-weight: bold;
+      }
+      button {
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="container w-50 text-center">
+        <h1 class="mt-2">XE Historical Data Downloader</h1>
+        <p>
+          Scrapes Historical currency data from xe.com and downloads it as a CSV
+          file.
+        </p>
+        <form action="#" method="post" class="w-75 m-auto">
+          <div class="form-group py-1">
+            <label for="start_date" class="my-2 float-start">Start Date:</label>
+            <input
+              type="date"
+              id="start_date"
+              name="start_date"
+              class="form-control"
+            />
+          </div>
+          <div class="form-group">
+            <label for="end_date" class="my-2 float-start">End Date:</label>
+            <input
+              type="date"
+              id="end_date"
+              name="end_date"
+              class="form-control"
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">Download Data</button>
+        </form>
+      </div>
+    </div>
+    <script>
+      $(document).ajaxSend(function () {
+        Swal.fire({
+          title: 'Scraping Data from xe.com',
+          html: '<br>Please wait, this may take a few minutes...<br>',
+          didOpen: () => {
+            Swal.showLoading();
+          },
+          willClose: () => {
+            clearInterval(timerInterval);
+          },
+        }).then((result) => {
+          if (result.dismiss === Swal.DismissReason.timer) {
+            console.log('I was closed by the timer');
+          }
+        });
+      });
+
+      document.querySelector('form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        console.log(1, startDate, endDate);
+        if (startDate && endDate) {
+          $.ajax({
+            type: 'POST',
+            url: '/scrape',
+            data: {
+              start_date: startDate,
+              end_date: endDate,
+            },
+            success: function (response) {
+              // this resp is a csv file from server, dowload it as currency_data-<start_date>-<end_date>.csv
+              const blob = new Blob([response], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `currency_data-${startDate}-${endDate}.csv`;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+            },
+            error: function (xhr, status, error) {
+              Swal.fire({
+                title: 'Error!',
+                text: xhr.responseText,
+                icon: 'error',
+                confirmButtonText: 'Cool',
+              });
+            },
+          }).done(function (data) {
+            Swal.fire({
+              title: 'Success!',
+              text: 'Data downloaded successfully',
+              icon: 'success',
+              confirmButtonText: 'Cool',
+            });
+          });
+        } else {
+          Swal.fire({
+            title: 'Error!',
+            text: 'Please select both start and end dates',
+            icon: 'error',
+            confirmButtonText: 'Cool',
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
